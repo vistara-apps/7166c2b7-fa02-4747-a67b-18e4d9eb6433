@@ -10,7 +10,7 @@
     "subtitle": "Built with Zara",
     "description": "KnowYourRights AI is a Base Mini App built with Zara.",
     "iconUrl": "https://0co.to/images/zara-2.png",
-    "homeUrl": "https://7166c2b7fa024747a67b18e4d9eb6433-upoe.vercel.app",
+    "homeUrl": "https://7166c2b7fa024747a67b18e4d9eb6433-wc5l.vercel.app",
     "splashImageUrl": "https://7166c2b7fa024747a67b18e4d9eb6433-upoe.vercel.app/splash.png",
     "splashBackgroundColor": "#000000",
     "heroImageUrl": "https://7166c2b7fa024747a67b18e4d9eb6433-upoe.vercel.app/image.png",
@@ -25,6 +25,6 @@
       "miniapp",
       "onchainkit"
     ],
-    "webhookUrl": "https://7166c2b7fa024747a67b18e4d9eb6433-upoe.vercel.app/api/webhook"
+    "webhookUrl": "https://7166c2b7fa024747a67b18e4d9eb6433-wc5l.vercel.app/api/webhook"
   }
 }
