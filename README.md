@@ -1,24 +1,22 @@
 # KnowYourRights AI
 
-Instant legal guidance in your pocket. A Base Mini App that provides state-specific legal rights information and guidance during encounters.
+Instant legal guidance in your pocket. A Base Mini App that provides state-specific legal rights information and guidance during stressful encounters.
 
 ## Features
 
-- **State-Specific Rights Guides**: Customized legal information based on your location
-- **Multilingual Support**: Available in English and Spanish
-- **Quick Record Button**: Document encounters in real-time
-- **Location-Aware Content**: Automatic state detection and relevant legal guidance
-- **Premium Subscription**: Advanced features for unlimited access
+- **State-Specific Rights Guides**: One-page, mobile-optimized guides with simplified, state-specific legal rights and scripts
+- **Multilingual Support**: Available in English and Spanish for broader accessibility
+- **Quick Record Button**: Document encounter details in real-time
+- **Location-Aware Content**: Automatically suggests relevant legal information based on user location
+- **AI-Powered Content**: Dynamic generation of "what to say" and "what not to say" scripts
 
 ## Tech Stack
 
 - **Framework**: Next.js 15 with App Router
-- **Blockchain**: Base (via OnchainKit & MiniKit)
+- **Blockchain**: Base (via OnchainKit and MiniKit)
 - **Styling**: Tailwind CSS with custom design system
-- **AI**: OpenAI/OpenRouter for content generation
-- **Backend**: Supabase (planned)
-- **Payments**: Stripe integration
-- **Social**: Farcaster integration
+- **AI**: OpenAI GPT for content generation
+- **TypeScript**: Full type safety throughout
 
 ## Getting Started
 
@@ -37,7 +35,10 @@ Instant legal guidance in your pocket. A Base Mini App that provides state-speci
    ```bash
    cp .env.example .env.local
    ```
-   Fill in your API keys in `.env.local`
+   
+   Fill in your API keys:
+   - `OPENAI_API_KEY` or `OPENROUTER_API_KEY` for AI content generation
+   - `NEXT_PUBLIC_ONCHAINKIT_API_KEY` for Base integration
 
 4. **Run the development server**
    ```bash
@@ -47,81 +48,67 @@ Instant legal guidance in your pocket. A Base Mini App that provides state-speci
 5. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
-## Environment Variables
+## Project Structure
 
-Required environment variables:
-
-- `NEXT_PUBLIC_ONCHAINKIT_API_KEY`: OnchainKit API key for Base integration
-- `OPENAI_API_KEY` or `OPENROUTER_API_KEY`: For AI content generation
-- `NEXT_PUBLIC_SUPABASE_URL`: Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase anonymous key
-- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`: Stripe publishable key
-- `STRIPE_SECRET_KEY`: Stripe secret key
-- `NEYNAR_API_KEY`: Farcaster API key
-
-## Core Components
-
-### AppShell
-Main application layout with navigation and language selection.
-
-### GuideCard
-Displays state-specific legal rights with tabbed interface for rights, what to say, and what to avoid.
-
-### RecordEncounter
-Interface for documenting legal encounters with timestamp and location tracking.
-
-### LocationBasedHint
-Automatic location detection and state-specific content suggestions.
-
-### SubscriptionModal
-Premium subscription upgrade interface with Stripe integration.
-
-## Data Models
-
-### User
-- userId, fId, createdAt, locale, location
-
-### Guide
-- guideId, state, title, content, language, keyRights, whatToSay, whatNotToSay
-
-### EncounterLog
-- logId, userId, timestamp, location, notes, shared, guideVersion
-
-## API Integration
-
-### OpenAI/OpenRouter
-- Generate state-specific legal guides
-- Translate content to Spanish
-- Create encounter summaries
-
-### Supabase
-- User data management
-- Guide storage and retrieval
-- Encounter logging
-
-### Stripe
-- Premium subscription handling
-- Payment processing
-
-### Farcaster (Neynar)
-- Social sharing of rights cards
-- User identity integration
+```
+├── app/                    # Next.js App Router
+│   ├── layout.tsx         # Root layout with providers
+│   ├── page.tsx           # Main application page
+│   ├── providers.tsx      # MiniKit and other providers
+│   └── globals.css        # Global styles and design tokens
+├── components/            # Reusable UI components
+│   ├── AppShell.tsx       # Main app container
+│   ├── GuideCard.tsx      # Legal guide display
+│   ├── ActionFAB.tsx      # Floating action button
+│   ├── LanguageSelector.tsx
+│   ├── LocationBasedHint.tsx
+│   ├── RecordEncounter.tsx
+│   └── StateSelector.tsx
+├── lib/                   # Utilities and types
+│   ├── types.ts           # TypeScript type definitions
+│   ├── constants.ts       # App constants
+│   ├── utils.ts           # Utility functions
+│   └── ai.ts              # AI content generation
+└── README.md
+```
 
 ## Design System
 
 The app uses a custom design system with:
-- **Colors**: Purple-blue gradient theme with glass morphism
-- **Typography**: Inter font with clear hierarchy
-- **Components**: Reusable UI components with consistent styling
-- **Animations**: Smooth transitions and micro-interactions
-- **Mobile-first**: Responsive design optimized for mobile devices
+
+- **Colors**: Purple-blue gradient theme with glass morphism effects
+- **Typography**: Clean, readable fonts optimized for mobile
+- **Spacing**: Consistent spacing scale (xs: 4px, sm: 8px, md: 12px, lg: 16px, xl: 24px)
+- **Components**: Modular, reusable components with variants
+
+## Key Components
+
+### GuideCard
+Displays legal rights information with expandable sections for overview, "what to say", and "what not to say".
+
+### RecordEncounter
+Modal interface for documenting legal encounters with timestamp and location data.
+
+### LocationBasedHint
+Automatically detects user location and provides state-specific guidance.
+
+### LanguageSelector
+Switches between English and Spanish content.
+
+## API Integration
+
+- **OpenAI**: Generates dynamic legal content based on state laws and scenarios
+- **MiniKit**: Integrates with Base blockchain for Web3 functionality
+- **Geolocation**: Detects user location for state-specific content
 
 ## Deployment
 
-The app is designed to be deployed as a Base Mini App and can be integrated into:
-- Base Wallet
-- Farcaster Frames
-- Web browsers
+The app is optimized for deployment on Vercel or similar platforms:
+
+```bash
+npm run build
+npm start
+```
 
 ## Contributing
 
@@ -135,6 +122,6 @@ The app is designed to be deployed as a Base Mini App and can be integrated into
 
 This project is licensed under the MIT License.
 
-## Support
+## Disclaimer
 
-For support, please contact the development team or create an issue in the repository.
+This app provides general legal information and should not be considered as legal advice. Always consult with a qualified attorney for specific legal matters.

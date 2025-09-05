@@ -1,124 +1,166 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, BookOpen, AlertTriangle, CheckCircle, Share2, Bookmark } from 'lucide-react';
 import { Guide } from '@/lib/types';
+import { cn } from '@/lib/utils';
+import { ChevronDown, ChevronUp, BookOpen, MessageSquare, AlertTriangle } from 'lucide-react';
 
 interface GuideCardProps {
   guide: Guide;
   variant?: 'default' | 'expanded';
   onSave?: () => void;
-  onShare?: () => void;
+  className?: string;
 }
 
-export function GuideCard({ guide, variant = 'default', onSave, onShare }: GuideCardProps) {
+export function GuideCard({ 
+  guide, 
+  variant = 'default',
+  onSave,
+  className 
+}: GuideCardProps) {
   const [isExpanded, setIsExpanded] = useState(variant === 'expanded');
-  const [activeTab, setActiveTab] = useState<'rights' | 'say' | 'avoid'>('rights');
-
-  const tabs = [
-    { id: 'rights', label: 'Your Rights', icon: CheckCircle },
-    { id: 'say', label: 'What to Say', icon: BookOpen },
-    { id: 'avoid', label: 'What NOT to Say', icon: AlertTriangle },
-  ] as const;
+  const [activeTab, setActiveTab] = useState<'overview' | 'say' | 'dont-say'>('overview');
 
   return (
-    <div className="glass-card animate-fade-in">
+    <div className={cn(
+      'glass-card p-6 space-y-4 fade-in',
+      className
+    )}>
       {/* Header */}
-      <div className="p-4 border-b border-white border-opacity-20">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-white">{guide.title}</h3>
-            <p className="text-sm text-white text-opacity-70">{guide.state} • {guide.language === 'es' ? 'Español' : 'English'}</p>
-          </div>
-          <div className="flex items-center space-x-2">
-            {onSave && (
-              <button
-                onClick={onSave}
-                className="p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-md transition-all duration-200"
-              >
-                <Bookmark className="w-4 h-4" />
-              </button>
-            )}
-            {onShare && (
-              <button
-                onClick={onShare}
-                className="p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-md transition-all duration-200"
-              >
-                <Share2 className="w-4 h-4" />
-              </button>
-            )}
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-md transition-all duration-200"
-            >
-              {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-          </div>
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold text-white mb-1">
+            {guide.title}
+          </h3>
+          <p className="text-white/70 text-sm">
+            {guide.state} • {guide.language === 'es' ? 'Español' : 'English'}
+          </p>
         </div>
+        
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="p-2 hover:bg-white/10 rounded-lg transition-colors duration-200"
+        >
+          {isExpanded ? (
+            <ChevronUp className="w-5 h-5 text-white/70" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-white/70" />
+          )}
+        </button>
       </div>
 
-      {/* Content */}
+      {/* Content Preview */}
+      {!isExpanded && (
+        <p className="text-white/80 text-sm line-clamp-2">
+          {guide.content}
+        </p>
+      )}
+
+      {/* Expanded Content */}
       {isExpanded && (
-        <div className="animate-slide-up">
-          {/* Tab navigation */}
-          <div className="flex border-b border-white border-opacity-20">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 flex items-center justify-center space-x-2 py-3 px-4 text-sm font-medium transition-all duration-200 ${
-                    activeTab === tab.id
-                      ? 'text-white bg-white bg-opacity-10 border-b-2 border-white'
-                      : 'text-white text-opacity-70 hover:text-white hover:bg-white hover:bg-opacity-5'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </button>
-              );
-            })}
+        <div className="space-y-4">
+          {/* Tab Navigation */}
+          <div className="flex space-x-1 bg-white/10 rounded-lg p-1">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={cn(
+                'flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-md text-sm font-medium transition-colors duration-200',
+                activeTab === 'overview'
+                  ? 'bg-white/20 text-white'
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
+              )}
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>Overview</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('say')}
+              className={cn(
+                'flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-md text-sm font-medium transition-colors duration-200',
+                activeTab === 'say'
+                  ? 'bg-white/20 text-white'
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
+              )}
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>What to Say</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('dont-say')}
+              className={cn(
+                'flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-md text-sm font-medium transition-colors duration-200',
+                activeTab === 'dont-say'
+                  ? 'bg-white/20 text-white'
+                  : 'text-white/70 hover:text-white hover:bg-white/10'
+              )}
+            >
+              <AlertTriangle className="w-4 h-4" />
+              <span>Avoid Saying</span>
+            </button>
           </div>
 
-          {/* Tab content */}
-          <div className="p-4">
-            {activeTab === 'rights' && (
+          {/* Tab Content */}
+          <div className="min-h-[200px]">
+            {activeTab === 'overview' && (
               <div className="space-y-3">
-                <h4 className="font-medium text-white mb-3">Your Constitutional Rights:</h4>
-                {guide.keyRights.map((right, index) => (
-                  <div key={index} className="flex items-start space-x-3">
-                    <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-white text-sm leading-relaxed">{right}</p>
-                  </div>
-                ))}
+                <p className="text-white/90 text-sm leading-relaxed">
+                  {guide.content}
+                </p>
               </div>
             )}
 
             {activeTab === 'say' && (
               <div className="space-y-3">
-                <h4 className="font-medium text-white mb-3">Recommended Phrases:</h4>
-                {guide.whatToSay.map((phrase, index) => (
-                  <div key={index} className="bg-green-500 bg-opacity-20 border border-green-400 border-opacity-30 rounded-lg p-3">
-                    <p className="text-white text-sm font-medium">{phrase}</p>
-                  </div>
-                ))}
+                <h4 className="text-white font-medium text-sm mb-3">
+                  Recommended phrases to use:
+                </h4>
+                <ul className="space-y-2">
+                  {guide.whatToSay.map((phrase, index) => (
+                    <li key={index} className="flex items-start space-x-3">
+                      <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="w-2 h-2 bg-green-400 rounded-full" />
+                      </div>
+                      <p className="text-white/90 text-sm">"{phrase}"</p>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 
-            {activeTab === 'avoid' && (
+            {activeTab === 'dont-say' && (
               <div className="space-y-3">
-                <h4 className="font-medium text-white mb-3">Avoid These Mistakes:</h4>
-                {guide.whatNotToSay.map((warning, index) => (
-                  <div key={index} className="bg-red-500 bg-opacity-20 border border-red-400 border-opacity-30 rounded-lg p-3">
-                    <div className="flex items-start space-x-3">
-                      <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
-                      <p className="text-white text-sm">{warning}</p>
-                    </div>
-                  </div>
-                ))}
+                <h4 className="text-white font-medium text-sm mb-3">
+                  Phrases to avoid:
+                </h4>
+                <ul className="space-y-2">
+                  {guide.whatNotToSay.map((phrase, index) => (
+                    <li key={index} className="flex items-start space-x-3">
+                      <div className="w-6 h-6 bg-red-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="w-2 h-2 bg-red-400 rounded-full" />
+                      </div>
+                      <p className="text-white/90 text-sm">"{phrase}"</p>
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex space-x-3 pt-4 border-t border-white/10">
+            {onSave && (
+              <button
+                onClick={onSave}
+                className="btn-secondary flex-1"
+              >
+                Save Guide
+              </button>
+            )}
+            <button className="btn-primary flex-1">
+              Share
+            </button>
           </div>
         </div>
       )}

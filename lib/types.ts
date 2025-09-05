@@ -16,7 +16,8 @@ export interface Guide {
   language: 'en' | 'es';
   whatToSay: string[];
   whatNotToSay: string[];
-  keyRights: string[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Encounter Log types
@@ -59,10 +60,9 @@ export interface LocationData {
 }
 
 // Subscription types
-export interface SubscriptionTier {
-  id: string;
-  name: string;
-  price: number;
-  features: string[];
-  isPopular?: boolean;
+export interface Subscription {
+  userId: string;
+  plan: 'free' | 'premium';
+  status: 'active' | 'inactive' | 'cancelled';
+  expiresAt?: Date;
 }

@@ -1,169 +1,149 @@
 'use client';
 
 import { useState } from 'react';
-import { Mic, Square, Save, Share2, Clock, MapPin } from 'lucide-react';
-import { formatDate, generateEncounterId } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { generateId, formatDate } from '@/lib/utils';
 import { EncounterLog } from '@/lib/types';
+import { X, Save, Share2, MapPin, Clock } from 'lucide-react';
 
 interface RecordEncounterProps {
-  onSave?: (log: EncounterLog) => void;
-  onShare?: (log: EncounterLog) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (log: EncounterLog) => void;
+  currentLocation?: string;
+  className?: string;
 }
 
-export function RecordEncounter({ onSave, onShare }: RecordEncounterProps) {
-  const [isRecording, setIsRecording] = useState(false);
+export function RecordEncounter({
+  isOpen,
+  onClose,
+  onSave,
+  currentLocation,
+  className
+}: RecordEncounterProps) {
   const [notes, setNotes] = useState('');
-  const [startTime, setStartTime] = useState<Date | null>(null);
-  const [location, setLocation] = useState('');
+  const [isShared, setIsShared] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const startRecording = () => {
-    setIsRecording(true);
-    setStartTime(new Date());
+  const handleSave = async () => {
+    if (!notes.trim()) return;
     
-    // Get current location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation(`${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`);
-        },
-        (error) => {
-          console.warn('Location access denied:', error);
-        }
-      );
+    setIsSaving(true);
+    
+    const log: EncounterLog = {
+      logId: generateId(),
+      userId: 'current-user', // In real app, get from auth
+      timestamp: new Date(),
+      location: currentLocation,
+      notes: notes.trim(),
+      shared: isShared,
+    };
+
+    try {
+      await onSave(log);
+      setNotes('');
+      setIsShared(false);
+      onClose();
+    } catch (error) {
+      console.error('Error saving encounter log:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const stopRecording = () => {
-    setIsRecording(false);
-  };
-
-  const saveEncounter = () => {
-    if (!notes.trim()) return;
-
-    const log: EncounterLog = {
-      logId: generateEncounterId(),
-      userId: 'current_user', // In real app, get from auth
-      timestamp: startTime || new Date(),
-      location,
-      notes: notes.trim(),
-      shared: false,
-    };
-
-    onSave?.(log);
-    
-    // Reset form
-    setNotes('');
-    setStartTime(null);
-    setLocation('');
-  };
-
-  const shareEncounter = () => {
-    if (!notes.trim()) return;
-
-    const log: EncounterLog = {
-      logId: generateEncounterId(),
-      userId: 'current_user',
-      timestamp: startTime || new Date(),
-      location,
-      notes: notes.trim(),
-      shared: true,
-    };
-
-    onShare?.(log);
-  };
+  if (!isOpen) return null;
 
   return (
-    <div className="glass-card animate-fade-in">
-      <div className="p-4 border-b border-white border-opacity-20">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-white">Record Encounter</h3>
-          <div className="flex items-center space-x-2">
-            {isRecording && (
-              <div className="flex items-center space-x-2 text-red-400">
-                <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium">Recording</span>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+      <div className={cn(
+        'w-full max-w-lg bg-white/10 backdrop-blur-lg border border-white/20 rounded-t-2xl sm:rounded-2xl shadow-modal slide-up',
+        className
+      )}>
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <h3 className="text-lg font-semibold text-white">
+            Record Encounter
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors duration-200"
+          >
+            <X className="w-5 h-5 text-white/70" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-4">
+          {/* Metadata */}
+          <div className="flex items-center space-x-4 text-sm text-white/70">
+            <div className="flex items-center space-x-2">
+              <Clock className="w-4 h-4" />
+              <span>{formatDate(new Date())}</span>
+            </div>
+            {currentLocation && (
+              <div className="flex items-center space-x-2">
+                <MapPin className="w-4 h-4" />
+                <span>{currentLocation}</span>
               </div>
             )}
           </div>
-        </div>
-      </div>
 
-      <div className="p-4 space-y-4">
-        {/* Recording controls */}
-        <div className="flex items-center justify-center space-x-4">
-          {!isRecording ? (
-            <button
-              onClick={startRecording}
-              className="flex items-center space-x-2 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-lg"
-            >
-              <Mic className="w-5 h-5" />
-              <span>Start Recording</span>
-            </button>
-          ) : (
-            <button
-              onClick={stopRecording}
-              className="flex items-center space-x-2 bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 shadow-lg"
-            >
-              <Square className="w-5 h-5 fill-current" />
-              <span>Stop Recording</span>
-            </button>
-          )}
-        </div>
-
-        {/* Encounter details */}
-        {(isRecording || startTime) && (
-          <div className="space-y-4 animate-slide-up">
-            {/* Timestamp and location */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {startTime && (
-                <div className="flex items-center space-x-2 text-white text-sm">
-                  <Clock className="w-4 h-4 text-blue-400" />
-                  <span>{formatDate(startTime)}</span>
-                </div>
-              )}
-              {location && (
-                <div className="flex items-center space-x-2 text-white text-sm">
-                  <MapPin className="w-4 h-4 text-green-400" />
-                  <span>Location recorded</span>
-                </div>
-              )}
-            </div>
-
-            {/* Notes input */}
-            <div>
-              <label htmlFor="notes" className="block text-white text-sm font-medium mb-2">
-                Encounter Notes
-              </label>
-              <textarea
-                id="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Describe what happened, who was involved, and any important details..."
-                className="w-full h-32 bg-white bg-opacity-10 border border-white border-opacity-30 rounded-lg px-3 py-2 text-white placeholder-white placeholder-opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent resize-none"
-              />
-            </div>
-
-            {/* Action buttons */}
-            {notes.trim() && (
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={saveEncounter}
-                  className="flex items-center space-x-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>Save</span>
-                </button>
-                <button
-                  onClick={shareEncounter}
-                  className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200"
-                >
-                  <Share2 className="w-4 h-4" />
-                  <span>Share</span>
-                </button>
-              </div>
-            )}
+          {/* Notes Input */}
+          <div>
+            <label className="block text-white font-medium text-sm mb-2">
+              Encounter Details
+            </label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Describe what happened, who was involved, and any important details..."
+              className="w-full h-32 bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-white/50 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent"
+              autoFocus
+            />
+            <p className="text-white/50 text-xs mt-2">
+              This information is stored locally and only shared if you choose to.
+            </p>
           </div>
-        )}
+
+          {/* Share Option */}
+          <div className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              id="share-log"
+              checked={isShared}
+              onChange={(e) => setIsShared(e.target.checked)}
+              className="w-4 h-4 text-purple-500 bg-white/10 border-white/20 rounded focus:ring-purple-500/50"
+            />
+            <label htmlFor="share-log" className="text-white text-sm">
+              Share anonymized metadata with community
+            </label>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex space-x-3 p-6 border-t border-white/10">
+          <button
+            onClick={onClose}
+            className="flex-1 btn-secondary"
+            disabled={isSaving}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!notes.trim() || isSaving}
+            className="flex-1 btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          >
+            {isSaving ? (
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>Save Log</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

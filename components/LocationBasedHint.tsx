@@ -1,109 +1,139 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MapPin, AlertCircle, ChevronRight } from 'lucide-react';
-import { getCurrentLocation, getStateFromCoordinates } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { getUserLocation } from '@/lib/utils';
+import { MapPin, ChevronRight } from 'lucide-react';
 
 interface LocationBasedHintProps {
-  onLocationDetected?: (state: string) => void;
+  onLocationDetected: (location: { state: string; city?: string }) => void;
   variant?: 'default' | 'expanded';
+  className?: string;
 }
 
-export function LocationBasedHint({ onLocationDetected, variant = 'default' }: LocationBasedHintProps) {
-  const [currentState, setCurrentState] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string>('');
-  const [isExpanded, setIsExpanded] = useState(variant === 'expanded');
-
-  useEffect(() => {
-    detectLocation();
-  }, []);
+export function LocationBasedHint({
+  onLocationDetected,
+  variant = 'default',
+  className
+}: LocationBasedHintProps) {
+  const [location, setLocation] = useState<{ state: string; city?: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const detectLocation = async () => {
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      setIsLoading(true);
-      setError('');
-      
-      const position = await getCurrentLocation();
-      const state = await getStateFromCoordinates(
-        position.coords.latitude,
-        position.coords.longitude
-      );
-      
-      setCurrentState(state);
-      onLocationDetected?.(state);
+      const detectedLocation = await getUserLocation();
+      if (detectedLocation) {
+        setLocation(detectedLocation);
+        onLocationDetected(detectedLocation);
+      } else {
+        setError('Unable to detect location');
+      }
     } catch (err) {
-      setError('Unable to detect location. Please select your state manually.');
-      console.error('Location detection failed:', err);
+      setError('Location access denied');
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (isLoading) {
+  useEffect(() => {
+    // Auto-detect location on mount
+    detectLocation();
+  }, []);
+
+  if (error) {
     return (
-      <div className="glass-card p-4 animate-fade-in">
+      <div className={cn(
+        'glass-card p-4 border-yellow-500/20',
+        className
+      )}>
         <div className="flex items-center space-x-3">
-          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-          <span className="text-white text-sm">Detecting your location...</span>
+          <MapPin className="w-5 h-5 text-yellow-400" />
+          <div className="flex-1">
+            <p className="text-white/90 text-sm font-medium">
+              Location not available
+            </p>
+            <p className="text-white/70 text-xs">
+              Please select your state manually
+            </p>
+          </div>
+          <button
+            onClick={detectLocation}
+            className="text-yellow-400 hover:text-yellow-300 text-xs underline"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (isLoading) {
     return (
-      <div className="glass-card p-4 animate-fade-in">
-        <div className="flex items-start space-x-3">
-          <AlertCircle className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+      <div className={cn(
+        'glass-card p-4',
+        className
+      )}>
+        <div className="flex items-center space-x-3">
+          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          <p className="text-white/90 text-sm">
+            Detecting your location...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!location) {
+    return (
+      <div className={cn(
+        'glass-card p-4 cursor-pointer hover:bg-white/15 transition-colors duration-200',
+        className
+      )} onClick={detectLocation}>
+        <div className="flex items-center space-x-3">
+          <MapPin className="w-5 h-5 text-white/70" />
           <div className="flex-1">
-            <p className="text-white text-sm">{error}</p>
-            <button
-              onClick={detectLocation}
-              className="text-blue-300 text-sm hover:text-blue-200 mt-1 underline"
-            >
-              Try again
-            </button>
+            <p className="text-white/90 text-sm font-medium">
+              Detect Location
+            </p>
+            <p className="text-white/70 text-xs">
+              Get state-specific legal guidance
+            </p>
           </div>
+          <ChevronRight className="w-4 h-4 text-white/50" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="glass-card animate-fade-in">
-      <div className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-green-500 bg-opacity-20 rounded-lg flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-green-400" />
-            </div>
-            <div>
-              <h3 className="text-white font-medium">Location Detected</h3>
-              <p className="text-white text-opacity-70 text-sm">{currentState}</p>
-            </div>
-          </div>
-          
-          {!isExpanded && (
-            <button
-              onClick={() => setIsExpanded(true)}
-              className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-md transition-all duration-200"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          )}
+    <div className={cn(
+      'glass-card p-4',
+      variant === 'expanded' && 'p-6',
+      className
+    )}>
+      <div className="flex items-center space-x-3">
+        <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
+          <MapPin className="w-5 h-5 text-green-400" />
         </div>
-
-        {isExpanded && (
-          <div className="mt-4 pt-4 border-t border-white border-opacity-20 animate-slide-up">
-            <p className="text-white text-sm mb-3">
-              Your rights and legal guidance are now customized for <strong>{currentState}</strong> state laws.
-            </p>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <span className="text-green-400 text-sm font-medium">State-specific guidance active</span>
-            </div>
-          </div>
+        <div className="flex-1">
+          <p className="text-white font-medium text-sm">
+            {location.city ? `${location.city}, ` : ''}{location.state}
+          </p>
+          <p className="text-white/70 text-xs">
+            Showing {location.state} state laws
+          </p>
+        </div>
+        {variant === 'expanded' && (
+          <button
+            onClick={detectLocation}
+            className="text-white/70 hover:text-white text-xs underline"
+          >
+            Update
+          </button>
         )}
       </div>
     </div>

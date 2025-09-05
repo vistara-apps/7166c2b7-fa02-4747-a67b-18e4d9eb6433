@@ -9,258 +9,269 @@ import { LanguageSelector } from '@/components/LanguageSelector';
 import { LocationBasedHint } from '@/components/LocationBasedHint';
 import { RecordEncounter } from '@/components/RecordEncounter';
 import { StateSelector } from '@/components/StateSelector';
-import { SubscriptionModal } from '@/components/SubscriptionModal';
+import { generateLegalGuide } from '@/lib/ai';
 import { Guide, EncounterLog } from '@/lib/types';
-import { SAMPLE_RIGHTS_DATA } from '@/lib/constants';
-import { generateGuideId } from '@/lib/utils';
-import { BarChart3, Users, TrendingUp, Crown } from 'lucide-react';
+import { LEGAL_SCENARIOS } from '@/lib/constants';
+import { generateId } from '@/lib/utils';
+import { ArrowRight, BookOpen, Mic, Shield, Users } from 'lucide-react';
 
 export default function HomePage() {
   const { setFrameReady } = useMiniKit();
-  const [currentLanguage, setCurrentLanguage] = useState<'en' | 'es'>('en');
+  
+  // State management
+  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'es'>('en');
   const [selectedState, setSelectedState] = useState<string>('');
   const [currentGuide, setCurrentGuide] = useState<Guide | null>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
-  const [encounters, setEncounters] = useState<EncounterLog[]>([]);
-  const [isPremium, setIsPremium] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [encounterLogs, setEncounterLogs] = useState<EncounterLog[]>([]);
+  const [currentLocation, setCurrentLocation] = useState<string>('');
 
+  // Initialize MiniKit
   useEffect(() => {
     setFrameReady();
   }, [setFrameReady]);
 
-  useEffect(() => {
-    if (selectedState && SAMPLE_RIGHTS_DATA[selectedState as keyof typeof SAMPLE_RIGHTS_DATA]) {
-      const stateData = SAMPLE_RIGHTS_DATA[selectedState as keyof typeof SAMPLE_RIGHTS_DATA];
+  // Handle location detection
+  const handleLocationDetected = (location: { state: string; city?: string }) => {
+    setSelectedState(location.state);
+    setCurrentLocation(location.city ? `${location.city}, ${location.state}` : location.state);
+  };
+
+  // Generate guide for current state
+  const generateGuide = async (scenario: string = 'Police Encounter') => {
+    if (!selectedState) return;
+    
+    setIsLoading(true);
+    try {
+      const guideData = await generateLegalGuide(selectedState, scenario, selectedLanguage);
+      
       const guide: Guide = {
-        guideId: generateGuideId(selectedState, currentLanguage),
+        guideId: generateId(),
         state: selectedState,
-        title: `${selectedState} Legal Rights Guide`,
-        content: `Your rights in ${selectedState}`,
-        language: currentLanguage,
-        keyRights: stateData.keyRights,
-        whatToSay: stateData.whatToSay,
-        whatNotToSay: stateData.whatNotToSay,
+        title: guideData.title,
+        content: guideData.content,
+        language: selectedLanguage,
+        whatToSay: guideData.whatToSay,
+        whatNotToSay: guideData.whatNotToSay,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
+      
       setCurrentGuide(guide);
-    }
-  }, [selectedState, currentLanguage]);
-
-  const handleLocationDetected = (state: string) => {
-    setSelectedState(state);
-  };
-
-  const handleRecordToggle = () => {
-    if (!isPremium && encounters.length >= 3) {
-      setShowSubscriptionModal(true);
-      return;
-    }
-    setIsRecording(!isRecording);
-  };
-
-  const handleSaveEncounter = (log: EncounterLog) => {
-    setEncounters(prev => [log, ...prev]);
-    setIsRecording(false);
-  };
-
-  const handleShareEncounter = (log: EncounterLog) => {
-    // In a real app, integrate with Farcaster API
-    console.log('Sharing encounter:', log);
-    setEncounters(prev => [log, ...prev]);
-    setIsRecording(false);
-  };
-
-  const handleSubscribe = (tierId: string) => {
-    if (tierId === 'premium') {
-      setIsPremium(true);
+    } catch (error) {
+      console.error('Error generating guide:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSaveGuide = () => {
-    if (!isPremium) {
-      setShowSubscriptionModal(true);
-      return;
-    }
-    // Save guide logic
-    console.log('Guide saved');
+  // Handle encounter recording
+  const handleSaveEncounter = async (log: EncounterLog) => {
+    setEncounterLogs(prev => [log, ...prev]);
+    // In a real app, save to backend/database
+    console.log('Encounter saved:', log);
   };
 
-  const handleShareGuide = () => {
-    // Share guide logic
-    console.log('Guide shared');
-  };
+  // Auto-generate guide when state/language changes
+  useEffect(() => {
+    if (selectedState) {
+      generateGuide();
+    }
+  }, [selectedState, selectedLanguage]);
 
   return (
     <AppShell>
-      <div className="max-w-3xl mx-auto space-y-6">
-        {/* Hero Section */}
-        <div className="text-center space-y-4 py-8">
-          <h1 className="text-3xl font-bold text-white">
+      {/* Hero Section */}
+      <div className="text-center mb-8">
+        <div className="glass-card p-8 mb-6">
+          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-2">
             KnowYourRights AI
-          </h1>
-          <p className="text-lg text-white text-opacity-80 max-w-2xl mx-auto">
-            Instant legal guidance in your pocket. Get state-specific rights information and 'what to say' scripts for any encounter.
+          </h2>
+          <p className="text-white/80 text-sm mb-6">
+            Get instant, state-specific legal guidance when you need it most. 
+            Know what to say, what not to say, and how to protect your rights.
           </p>
           
-          {/* Language selector */}
-          <div className="flex justify-center">
-            <LanguageSelector
-              currentLanguage={currentLanguage}
-              onLanguageChange={setCurrentLanguage}
-            />
-          </div>
-        </div>
-
-        {/* Location detection */}
-        <LocationBasedHint onLocationDetected={handleLocationDetected} />
-
-        {/* State selector */}
-        {!selectedState && (
-          <div className="glass-card p-6 animate-fade-in">
-            <h2 className="text-xl font-semibold text-white mb-4">Select Your State</h2>
-            <StateSelector
-              selectedState={selectedState}
-              onStateSelect={setSelectedState}
-            />
-          </div>
-        )}
-
-        {/* Stats cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="metric-card">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-500 bg-opacity-20 rounded-lg flex items-center justify-center">
-                <BarChart3 className="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <p className="text-white text-opacity-70 text-sm">Detection Rate</p>
-                <p className="text-white text-xl font-bold">97.6%</p>
-              </div>
+          {/* Quick Stats */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">50</div>
+              <div className="text-white/70 text-xs">States Covered</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">2</div>
+              <div className="text-white/70 text-xs">Languages</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">24/7</div>
+              <div className="text-white/70 text-xs">Available</div>
             </div>
           </div>
-
-          <div className="metric-card">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-green-500 bg-opacity-20 rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-green-400" />
-              </div>
-              <div>
-                <p className="text-white text-opacity-70 text-sm">Active Users</p>
-                <p className="text-white text-xl font-bold">15.2K</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="metric-card">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-purple-500 bg-opacity-20 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-purple-400" />
-              </div>
-              <div>
-                <p className="text-white text-opacity-70 text-sm">Success Rate</p>
-                <p className="text-white text-xl font-bold">89.3%</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Current guide */}
-        {currentGuide && (
-          <GuideCard
-            guide={currentGuide}
-            variant="expanded"
-            onSave={handleSaveGuide}
-            onShare={handleShareGuide}
-          />
-        )}
-
-        {/* Recording interface */}
-        {isRecording && (
-          <RecordEncounter
-            onSave={handleSaveEncounter}
-            onShare={handleShareEncounter}
-          />
-        )}
-
-        {/* Recent encounters */}
-        {encounters.length > 0 && (
-          <div className="glass-card animate-fade-in">
-            <div className="p-4 border-b border-white border-opacity-20">
-              <h3 className="text-lg font-semibold text-white">Recent Encounters</h3>
-            </div>
-            <div className="p-4 space-y-3">
-              {encounters.slice(0, 3).map((encounter) => (
-                <div key={encounter.logId} className="bg-white bg-opacity-10 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-white text-sm font-medium">
-                      {encounter.timestamp.toLocaleDateString()}
-                    </span>
-                    {encounter.shared && (
-                      <span className="text-green-400 text-xs bg-green-500 bg-opacity-20 px-2 py-1 rounded">
-                        Shared
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-white text-opacity-80 text-sm">
-                    {encounter.notes.length > 100 
-                      ? `${encounter.notes.substring(0, 100)}...` 
-                      : encounter.notes
-                    }
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Premium upgrade prompt */}
-        {!isPremium && encounters.length >= 2 && (
-          <div className="glass-card p-6 text-center animate-fade-in">
-            <Crown className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">Unlock Premium Features</h3>
-            <p className="text-white text-opacity-80 mb-4">
-              Get unlimited encounter recording, multilingual support, and priority assistance.
-            </p>
-            <button
-              onClick={() => setShowSubscriptionModal(true)}
-              className="btn-primary"
-            >
-              Upgrade to Premium
-            </button>
-          </div>
-        )}
-
-        {/* Action buttons */}
-        <div className="flex justify-center space-x-4 pb-20">
-          <button
-            onClick={() => setSelectedState('')}
-            className="btn-secondary"
-          >
-            Change State
-          </button>
-          {selectedState && (
-            <button
-              onClick={() => setShowSubscriptionModal(true)}
-              className="btn-primary"
-            >
-              View Premium Features
-            </button>
-          )}
         </div>
       </div>
+
+      {/* Location Detection */}
+      <LocationBasedHint
+        onLocationDetected={handleLocationDetected}
+        className="mb-6"
+      />
+
+      {/* State Selection */}
+      {!selectedState && (
+        <div className="mb-6">
+          <h3 className="text-white font-semibold mb-3">Select Your State</h3>
+          <StateSelector
+            selectedState={selectedState}
+            onStateChange={setSelectedState}
+          />
+        </div>
+      )}
+
+      {/* Language Selection */}
+      {selectedState && (
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-white font-semibold">Your Rights Guide</h3>
+          <LanguageSelector
+            selectedLanguage={selectedLanguage}
+            onLanguageChange={setSelectedLanguage}
+          />
+        </div>
+      )}
+
+      {/* Loading State */}
+      {isLoading && (
+        <div className="glass-card p-8 text-center mb-6">
+          <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-white/80">Generating your personalized legal guide...</p>
+        </div>
+      )}
+
+      {/* Current Guide */}
+      {currentGuide && !isLoading && (
+        <GuideCard
+          guide={currentGuide}
+          variant="expanded"
+          onSave={() => {
+            // In a real app, save to user's saved guides
+            console.log('Guide saved:', currentGuide);
+          }}
+          className="mb-6"
+        />
+      )}
+
+      {/* Quick Actions */}
+      {selectedState && (
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <button
+            onClick={() => generateGuide('Traffic Stop')}
+            className="glass-card p-4 text-left hover:bg-white/15 transition-colors duration-200"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                <BookOpen className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <p className="text-white font-medium text-sm">Traffic Stop</p>
+                <p className="text-white/70 text-xs">Know your rights</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setIsRecording(true)}
+            className="glass-card p-4 text-left hover:bg-white/15 transition-colors duration-200"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
+                <Mic className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <p className="text-white font-medium text-sm">Record</p>
+                <p className="text-white/70 text-xs">Document encounter</p>
+              </div>
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* Recent Encounters */}
+      {encounterLogs.length > 0 && (
+        <div className="mb-6">
+          <h3 className="text-white font-semibold mb-3">Recent Encounters</h3>
+          <div className="space-y-3">
+            {encounterLogs.slice(0, 3).map((log) => (
+              <div key={log.logId} className="glass-card p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="text-white/90 text-sm line-clamp-2 mb-2">
+                      {log.notes}
+                    </p>
+                    <div className="flex items-center space-x-4 text-xs text-white/70">
+                      <span>{log.timestamp.toLocaleDateString()}</span>
+                      {log.location && <span>{log.location}</span>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Features Overview */}
+      {!selectedState && (
+        <div className="space-y-4 mb-6">
+          <h3 className="text-white font-semibold">Features</h3>
+          
+          <div className="glass-card p-4">
+            <div className="flex items-center space-x-3 mb-3">
+              <Shield className="w-5 h-5 text-purple-400" />
+              <h4 className="text-white font-medium">State-Specific Rights</h4>
+            </div>
+            <p className="text-white/80 text-sm">
+              Get accurate legal information tailored to your state's laws and regulations.
+            </p>
+          </div>
+
+          <div className="glass-card p-4">
+            <div className="flex items-center space-x-3 mb-3">
+              <Users className="w-5 h-5 text-blue-400" />
+              <h4 className="text-white font-medium">Multilingual Support</h4>
+            </div>
+            <p className="text-white/80 text-sm">
+              Access guides and scripts in both English and Spanish for better communication.
+            </p>
+          </div>
+
+          <div className="glass-card p-4">
+            <div className="flex items-center space-x-3 mb-3">
+              <Mic className="w-5 h-5 text-red-400" />
+              <h4 className="text-white font-medium">Encounter Recording</h4>
+            </div>
+            <p className="text-white/80 text-sm">
+              Quickly document important details during or after legal encounters.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Floating Action Button */}
       <ActionFAB
         variant="record"
-        onAction={handleRecordToggle}
+        onClick={() => setIsRecording(true)}
         isActive={isRecording}
       />
 
-      {/* Subscription Modal */}
-      <SubscriptionModal
-        isOpen={showSubscriptionModal}
-        onClose={() => setShowSubscriptionModal(false)}
-        onSubscribe={handleSubscribe}
+      {/* Record Encounter Modal */}
+      <RecordEncounter
+        isOpen={isRecording}
+        onClose={() => setIsRecording(false)}
+        onSave={handleSaveEncounter}
+        currentLocation={currentLocation}
       />
     </AppShell>
   );

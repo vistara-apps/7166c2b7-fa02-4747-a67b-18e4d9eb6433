@@ -15,7 +15,7 @@
 
 @layer components {
   .glass-card {
-    @apply bg-white bg-opacity-10 backdrop-blur-lg border border-white border-opacity-20 rounded-lg shadow-card;
+    @apply bg-white bg-opacity-10 backdrop-blur-lg border border-white border-opacity-20 rounded-xl shadow-card;
   }
   
   .btn-primary {
